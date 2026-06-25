@@ -47,7 +47,9 @@ fn DogView() -> Element {
         img_src.restart();
     };
     let save = move |_| async move {
+        let current = img_src.cloned().unwrap();
         img_src.restart();
+        _ = save_dog(current).await;
     };
     rsx! {
         div { id: "dogview",
@@ -58,4 +60,18 @@ fn DogView() -> Element {
             button { onclick: save, id: "save", "save!" }
         }
     }
+}
+
+#[post("/api/save_dog")]
+async fn save_dog(image: String) -> Result<()> {
+    use std::fs::OpenOptions;
+    use std::io::Write;
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .create(true)
+        .open("dogs.txt")?;
+    file.write_fmt(format_args!("{image}\n"))?;
+    Ok(())
 }
