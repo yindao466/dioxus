@@ -4,6 +4,20 @@ use dioxus::prelude::*;
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 // const HEADER_SVG: Asset = asset!("/assets/header.svg");
 
+#[cfg(feature = "server")]
+thread_local! {
+    pub static DB: rusqlite::Connection = {
+        let conn = rusqlite::Connection::open("hotdog.db").expect("打开数据库失败");
+        conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS dogs(
+            id INTEGER PRIMARY KEY,
+            url TEXT NOT NULL
+        );
+        ").unwrap();
+        conn
+    };
+}
+
 fn main() {
     dioxus::launch(App);
 }
@@ -64,14 +78,6 @@ fn DogView() -> Element {
 
 #[post("/api/save_dog")]
 async fn save_dog(image: String) -> Result<()> {
-    use std::fs::OpenOptions;
-    use std::io::Write;
-
-    let mut file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .create(true)
-        .open("dogs.txt")?;
-    file.write_fmt(format_args!("{image}\n"))?;
+    DB.with(|f| f.execute("INSERT INTO dogs (url) VALUES (?1)", &[&image]))?;
     Ok(())
 }
