@@ -8,7 +8,12 @@ edition = "2021"
 dioxus = { version = "0.7.1", features = [] }
 reqwest = { version = "0.13.4", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
+sqlx = { version = "0.8", features = [
+    "runtime-tokio",
+    "sqlite",
+], optional = true }
 
 [features]
 default = ["web"]
 web = ["dioxus/web"]
+sqlx = ["dep:sqlx"]

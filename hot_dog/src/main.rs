@@ -33,22 +33,25 @@ fn Title() -> Element {
 
 #[component]
 fn DogView() -> Element {
-    let mut img_src =
-        use_signal(|| "https://images.dog.ceo/breeds/pitbull/dog-3981540_1280.jpg".to_string());
-
-    let skip = move |_evt| {};
-    let save = move |_| async move {
-        let resp = reqwest::get("https://dog.ceo/api/breeds/image/random")
+    let mut img_src = use_resource(|| async move {
+        reqwest::get("https://dog.ceo/api/breeds/image/random")
             .await
             .unwrap()
             .json::<DogApi>()
             .await
-            .unwrap();
-        img_src.set(resp.message);
+            .unwrap()
+            .message
+    });
+
+    let skip = move |_evt| {
+        img_src.restart();
+    };
+    let save = move |_| async move {
+        img_src.restart();
     };
     rsx! {
         div { id: "dogview",
-            img { src: "{img_src}" }
+            img { src: img_src.cloned().unwrap_or_default() }
         }
         div { id: "buttons",
             button { onclick: skip, id: "skip", "skip" }
